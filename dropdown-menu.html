@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .active {
+      background: red;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dropdown-menu-content">
+    <div class="allow-focus">
+      我是第一句话
+    </div>
+    <div class="allow-focus" data-sk="a">
+      我是第二句话 我的快捷键是 a
+    </div>
+    <div>
+      我不会被选中，我的儿子会被选中<button class="allow-focus"> 我是儿子</button>
+    </div>
+    <div data-sk="a">
+      我虽然是一句话 但是我会被跳过
+    </div>
+    <div class="allow-focus">
+      我是第三句话
+    </div>
+    <div class="btn-group">
+      <button class="allow-focus" data-sk="c">测试1 快捷键c</button>
+      <button class="allow-focus" data-sk="p">测试2 快捷键p</button>
+      <button class="allow-focus" data-sk="d">测试3 快捷键d</button>
+    </div>
+    <div class="allow-focus">
+      我是第四句话
+    </div>
+    <p style="color:green;">
+      可以通过上下左右，a、c、p、d 来进行切换，选中状态下可以按下回车
+    </p>
+    <!-- 文档 -->
+    <ul style="color:red;">
+      <li>
+        这只是一个简易实现，没有封装，也没有ui，目前只支持单快捷键与上下左右进行切换
+      </li>
+      <li>
+        当按下回车时会触发当前焦点元素的click事件
+      </li>
+      <li>
+        只有为元素添加allow-focus class 才可以支持快捷键切换
+      </li>
+      <li>
+        为元素设置data-sk="key" 可实现自定义快捷键
+      </li>
+    </ul>
+  </div>
+  <script>
+    (function (selector) {
+      // 容器元素
+      const el = document.querySelector(selector)
+
+      // 激活样式
+      const ACTIVE_CLASS_NAME = 'active'
+
+      // 可以获取焦点的元素列表
+      let allowFocusElList
+
+      // 按键与dom映射
+      let keyMap
+
+      // 当前焦点元素索引
+      let currentIndex = -1
+
+      // 设置焦点
+      let setFocus = function (newEl) {
+        if (allowFocusElList[currentIndex] !== newEl) {
+          const preActiveEl = el.querySelector(`.${ACTIVE_CLASS_NAME}`)
+          if (preActiveEl) {
+            preActiveEl.classList.remove(ACTIVE_CLASS_NAME)
+          }
+          newEl.classList.add(ACTIVE_CLASS_NAME)
+          currentIndex = allowFocusElList.indexOf(newEl)
+        }
+      }
+
+      // 监听回车键
+      let onEnterKey = function (key) {
+        if (currentIndex !== -1) {
+          const currentEl = allowFocusElList[currentIndex]
+          currentEl.click()
+          // TODO 为了测试 弹一个alert 生产环境去掉
+          alert(`${currentEl.innerText}`, '触发了回车');
+        }
+      }
+
+      // 监听其他按键
+      let onOtherKey = function (key) {
+        if (['ArrowUp', 'ArrowLeft'].indexOf(key) !== -1) {
+          let index = currentIndex - 1
+          if (index < 0) {
+            index = allowFocusElList.length - 1
+          }
+          setFocus(allowFocusElList[index])
+        } else if (['ArrowDown', 'ArrowRight'].indexOf(key) !== -1) {
+          let index = currentIndex + 1
+          if (index === allowFocusElList.length) {
+            index = 0
+          }
+          setFocus(allowFocusElList[index])
+        } else if (keyMap[key]) {
+          setFocus(keyMap[key])
+        }
+      }
+
+      // 监听键盘按下
+      let onKeydown = function (e) {
+        const { key } = e
+        console.log(key)
+        if ('Enter' === key) {
+          onEnterKey(key)
+        } else {
+          onOtherKey(key)
+        }
+      }
+
+      // 销毁
+      const destroy = function () {
+        currentIndex = -1
+        document.removeEventListener('keydown', onKeydown)
+      }
+
+      // 初始化数据
+      function initData() {
+        // 初始化 可以获取焦点的元素列表
+        allowFocusElList = Array.prototype.slice.call(el.querySelectorAll('.allow-focus'))
+        // 初始化 按键与dom映射
+        keyMap = allowFocusElList.reduce((map, el) => {
+          const { sk } = el.dataset
+          if (sk && !map[sk]) {
+            map[sk] = el
+          }
+          return map
+        }, {})
+      }
+
+      // 初始化事件
+      function initEvent() {
+        document.addEventListener('keydown', onKeydown)
+      }
+
+      // 初始化
+      function init() {
+        initData()
+        initEvent()
+      }
+
+      init()
+    })('.dropdown-menu-content')
+
+
+  </script>
+</body>
+
+</html>
